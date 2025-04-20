@@ -4,20 +4,20 @@ This project models and forecasts U.S. Natural Gas (Henry Hub) daily returns usi
 
 ---
 
-## 📌 Overview
+## Overview
 
 - Time series: Natural Gas Futures (`NG=F`)
 - Models used:
   - ARMA(1,1)
   - GARCH(1,1)
   - XGBoost (with lagged returns, volatility, momentum)
-- Forecasting target: **2024 daily log-returns**
+- Forecasting target: 2024 daily log-returns
 - Evaluation: RMSE, MAE, residual analysis
 - Confidence intervals included for forecast uncertainty
 
 ---
 
-## 📁 Files
+## Files
 
 - `Forecasting analysis NatGas.py`: ARMA + GARCH modeling
 - `xgboost_lng_forecast.py`: ML-based return forecasting
@@ -25,7 +25,7 @@ This project models and forecasts U.S. Natural Gas (Henry Hub) daily returns usi
 
 ---
 
-## ✅ Key Points
+## Key Points
 
 - Full data analysis (stationarity, autocorrelation, distribution)
 - Out-of-sample forecast for 2024
@@ -33,7 +33,7 @@ This project models and forecasts U.S. Natural Gas (Henry Hub) daily returns usi
 
 ---
 
-## 🔧 To Do
+## To Do
 
 - Add exogenous variables
 - Try LSTM for sequence modeling
