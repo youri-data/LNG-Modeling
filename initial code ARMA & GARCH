@@ -1,0 +1,83 @@
+from arch import arch_model
+import numpy as np 
+import yfinance as yf 
+import matplotlib.pyplot as plt 
+from statsmodels.tsa.stattools import adfuller 
+import seaborn as sns 
+from scipy.stats import skew, kurtosis
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.arima.model import ARIMA
+
+df = yf.download("NG=F", end="2023-01-01")
+df = df.ffill().dropna()
+returns = df.pct_change().dropna()
+returns_2024 = returns[returns.index.year == 2024]
+returns_pre_2024 = returns[returns.index < '2024-01-01']
+
+print(returns.head())
+
+# check stationarity with adfuller test
+result = adfuller(returns["Close"])
+print("ADF Statistic:", result[0])
+print("p-value:", result[1])
+
+# calculate rolling statistics and check them visually just to be sure that they are indeed stationnary. 
+rolling_window = 50
+rolling_mean = returns["Close"].rolling(window=rolling_window).mean()
+rolling_std = returns["Close"].rolling(window=rolling_window).std()
+
+# plot original series, rolling mean, and rolling std
+plt.figure(figsize=(12,6))
+plt.plot(returns["Close"], label='Original', color='blue')
+plt.plot(rolling_mean, label=f'Rolling Mean ({rolling_window})', color='red')
+plt.plot(rolling_std, label=f'Rolling Std ({rolling_window})', color='green')
+plt.title("Rolling Mean & Standard Deviation of Natural Gas Prices")
+plt.xlabel("Date")
+plt.ylabel("Price (USD/MMBtu)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#histogram + desenty
+
+# histogram + density
+plt.figure(figsize=(10,5))
+sns.histplot(returns["Close"], kde=True, bins=50)
+plt.title("Distribution of Natural Gas Prices")
+plt.xlabel("Price (USD/MMBtu)")
+plt.ylabel("Frequency")
+plt.grid(True)
+plt.show()
+
+# skewness and kurtosis
+print("Skewness:", skew(df["Close"]))
+print("Kurtosis:", kurtosis(df["Close"]))
+
+# plot autocorrelation and partial autocorrelation
+plot_acf(returns["Close"], lags=40, alpha=0.05)
+plt.title("Autocorrelation Function (ACF)", fontsize=14)
+plt.xlabel("Lags")
+plt.ylabel("Autocorrelation")
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+plot_pacf(returns["Close"], lags=40, method='ywm', alpha=0.05)
+plt.title("Partial Autocorrelation Function (PACF)", fontsize=14)
+plt.xlabel("Lags")
+plt.ylabel("Partial Autocorrelation")
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+# fit ARMA(1,1) on pre-2024 returns
+model = ARIMA(returns_pre_2024["Close"], order=(1, 0, 1))  # ARMA(p,q) is ARIMA(p,0,q)
+result = model.fit()
+
+# print summary
+print(result.summary())
+
+# fit GARCH(1,1) on pre-2024 returns
+model_garch = arch_model(returns_pre_2024["Close"], vol="GARCH", p=1, q=1, dist="normal")
+res_garch = model_garch.fit(update_freq=10)
+
+# print summary
+print(res_garch.summary())
