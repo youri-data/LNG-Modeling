@@ -111,7 +111,7 @@ plt.plot(y_forecast.index, y_pred_2024, label="XGBoost Prediction 2024", color="
 # plot confidence intervals
 plt.fill_between(y_forecast.index, lower_bound, upper_bound, color='orange', alpha=0.2, label='95% Confidence Interval')
 
-plt.title("XGBoost Forecast vs Actual Returns for 2024", fontsize=16, fontweight='bold')
+plt.title("XGBoost Forecast vs Actual Return for 2024", fontsize=16, fontweight='bold')
 plt.xlabel("Date", fontsize=12)
 plt.ylabel("Daily Return", fontsize=12)
 plt.axhline(0, color='grey', linewidth=0.8, linestyle='--')
