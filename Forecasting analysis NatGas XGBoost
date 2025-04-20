@@ -1,0 +1,121 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from xgboost import XGBRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import yfinance as yf
+
+# load natural gas futures data
+df = yf.download("NG=F", auto_adjust=False)
+
+returns = df["Close"].pct_change().dropna()
+data = pd.DataFrame(returns)
+data.columns = ["Return"]
+data["volatility_5"] = data["Return"].rolling(window=5).std()
+data["momentum_5"] = data["Return"].rolling(window=5).mean()
+
+# build lagged dataframe
+for lag in range(1, 6):
+    data[f"lag_{lag}"] = data["Return"].shift(lag)
+
+data["target"] = data["Return"]
+data.dropna(inplace=True)
+
+# train-test split (time-based)
+train_size = int(len(data) * 0.8)
+train = data.iloc[:train_size]
+test = data.iloc[train_size:]
+
+X_train = train[[f"lag_{i}" for i in range(1, 6)] + ["volatility_5", "momentum_5"]]
+y_train = train["target"]
+
+X_test = test[[f"lag_{i}" for i in range(1, 6)] + ["volatility_5", "momentum_5"]]
+y_test = test["target"]
+
+# define a split within the test set to simulate forecasting
+forecast_cutoff = int(len(test) * 0.8)
+validation = test.iloc[:forecast_cutoff]
+forecast = test.iloc[forecast_cutoff:]
+
+X_val = X_test.loc[validation.index]
+y_val = y_test.loc[validation.index]
+
+X_forecast = X_test.loc[forecast.index]
+y_forecast = y_test.loc[forecast.index]
+
+# fit XGBoost model
+model = XGBRegressor(n_estimators=100, max_depth=3, learning_rate=0.1)
+model.fit(X_train, y_train)
+
+# predict full test set (no shift)
+y_pred = model.predict(X_test)
+
+# feature importance
+importances = model.feature_importances_
+features = X_train.columns
+plt.figure(figsize=(10, 5))
+plt.bar(features, importances, color='orange')
+plt.title("Feature Importances (XGBoost)", fontsize=14, fontweight='bold')
+plt.ylabel("Importance Score")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# residual analysis
+residuals = y_test - y_pred
+plt.figure(figsize=(14, 6))
+plt.subplot(1, 2, 1)
+plt.hist(residuals, bins=40, color='grey', edgecolor='black')
+plt.title("Residual Distribution")
+plt.xlabel("Residual")
+plt.ylabel("Frequency")
+
+plt.subplot(1, 2, 2)
+plt.plot(y_test.index, residuals, color="purple", alpha=0.6)
+plt.title("Residuals Over Time")
+plt.xlabel("Date")
+plt.ylabel("Residual")
+plt.axhline(0, color='grey', linestyle='--')
+
+plt.tight_layout()
+plt.show()
+
+# retrain the model on full training data + validation
+X_train_extended = pd.concat([X_train, X_val])
+y_train_extended = pd.concat([y_train, y_val])
+
+model.fit(X_train_extended, y_train_extended)
+
+# generate forecasts for 2024 using the re-trained model
+y_pred_2024 = model.predict(X_forecast)
+
+# compute residual standard deviation
+std_resid = (y_forecast - y_pred_2024).std()
+
+# compute confidence intervals (approximate, assuming normality)
+lower_bound = y_pred_2024 - 1.96 * std_resid
+upper_bound = y_pred_2024 + 1.96 * std_resid
+
+# evaluate 2024 performance
+rmse_2024 = np.sqrt(mean_squared_error(y_forecast, y_pred_2024))
+mae_2024 = mean_absolute_error(y_forecast, y_pred_2024)
+
+print("2024 RMSE:", rmse_2024)
+print("2024 MAE:", mae_2024)
+
+# plot 2024 forecast vs actual
+plt.figure(figsize=(14, 7))
+plt.plot(y_forecast.index, y_forecast, label="Actual Returns 2024", color="black", linestyle="--", linewidth=1.5, alpha=0.6)
+plt.plot(y_forecast.index, y_pred_2024, label="XGBoost Prediction 2024", color="#FF8C00", linewidth=2)
+
+# plot confidence intervals
+plt.fill_between(y_forecast.index, lower_bound, upper_bound, color='orange', alpha=0.2, label='95% Confidence Interval')
+
+plt.title("XGBoost Forecast vs Actual Returns for 2024", fontsize=16, fontweight='bold')
+plt.xlabel("Date", fontsize=12)
+plt.ylabel("Daily Return", fontsize=12)
+plt.axhline(0, color='grey', linewidth=0.8, linestyle='--')
+plt.legend(loc="upper left", fontsize=11, frameon=True)
+plt.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+plt.tight_layout()
+plt.show()
