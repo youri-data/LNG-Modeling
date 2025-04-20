@@ -1,14 +1,39 @@
-# LNG-Modeling
-Modeling and forecasting LNG/Natural Gas returns using ARIMA, GARCH, and XGBoost
+# LNG Modeling: Forecasting Natural Gas Returns
 
-The objective of the report is to do a modelling/forecasting analysis on a
-financial time series ( LNG close price). My only constraint is that the series must have a
-sufficiently long sample size. 
-Apart from this constraint, the modeling needs to include a data analisys, an estimation of the
-model parameters and a validation of the model (parameters and residuals)
+This project models and forecasts U.S. Natural Gas (Henry Hub) daily returns using econometrics and machine learning.
 
-To summurize, the main purpose of the model is to generate forecasts (log-returns and/or volatility) as well
-as a confidence interval or the distribution of the forecasts (if possible).
+---
 
+## 📌 Overview
 
-code : 
+- Time series: Natural Gas Futures (`NG=F`)
+- Models used:
+  - ARMA(1,1)
+  - GARCH(1,1)
+  - XGBoost (with lagged returns, volatility, momentum)
+- Forecasting target: **2024 daily log-returns**
+- Evaluation: RMSE, MAE, residual analysis
+- Confidence intervals included for forecast uncertainty
+
+---
+
+## 📁 Files
+
+- `Forecasting analysis NatGas.py`: ARMA + GARCH modeling
+- `xgboost_lng_forecast.py`: ML-based return forecasting
+- `README.md`: Project summary
+
+---
+
+## ✅ Key Points
+
+- Full data analysis (stationarity, autocorrelation, distribution)
+- Out-of-sample forecast for 2024
+- Multiple model comparison with error metrics
+
+---
+
+## 🔧 To Do
+
+- Add exogenous variables
+- Try LSTM for sequence modeling
